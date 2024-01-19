@@ -13,6 +13,13 @@ module ram (
 
     reg [7:0] mem ['hff];
 
+    integer i;
+
+    initial begin
+        for (i = 0; i <= 'hff; i = i + 1)
+            mem[i] = 0;
+    end
+
     always @ (posedge clk & ce) begin
         if (we)
             mem[addr] <= data;
@@ -28,8 +35,17 @@ module counter (
     input wire dir,
     input wire ce,
 
+    input wire [7:0] inp,
+    input wire load,
+
     output reg [7:0] out,
 );
+
+    initial begin
+        out <= 0;
+    end
+
+
 
     always @ (posedge clk & ce) begin
         if (!dir & c)
@@ -38,48 +54,54 @@ module counter (
             out <= out - 1;
         else if (rst)
             out <= 'h00;
+        
+        if (load)
+            out <= inp;
     end
 endmodule
 
 module tape (
-    input wire clk,
+    input wire dclk,
 
-    input wire p_clk,
     input wire p_rst,
-    input wire p_c,
-    input wire p_dir,
-    input wire p_ce,
+    // input wire p_c,
+    // input wire p_dir,
+    // input wire p_ce,
     
-    input wire b_clk,
     input wire b_rst,
-    input wire b_c,
-    input wire b_dir,
-    input wire b_ce,
+    // input wire b_c,
+    // input wire b_dir,
+    // input wire b_ce,
 
-    input wire we,
-    input wire ce,
-    input wire oe,
+    // input wire we,
+    // input wire ce,
+    // input wire oe,
 
     output reg [7:0] out,
+
+    input wire plus,
+    input wire minus,
+    input wire prev,
+    input wire next,
+    input wire outp,
+    input wire write,
+    input wire load,
 );
 
     reg [7:0] p_out;
     reg [7:0] b_out;
 
+    reg [7:0] r_out;
+
     counter ptr (
-        p_clk, p_rst, p_c, p_dir, p_ce, p_out
+        dclk, p_rst, next | prev, prev, next | prev | load, out, load, p_out
     );
 
     counter bfr (
-        b_clk, b_rst, b_c, b_dir, b_ce, b_out
+        dclk, b_rst, plus | minus, minus, plus | minus | load, out, load, b_out
     );
 
     ram r (
-        clk, p_out, b_out, we, ce, oe, out
+        dclk, p_out, b_out, write, plus | minus | outp | write, outp, out
     );
-
-    always @ (posedge clk) begin
-        p_clk <= clk;
-        b_clk <= clk;
-    end
 endmodule

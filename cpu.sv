@@ -130,20 +130,59 @@ module control (
     wire ui_en;
     reg [7:0] ui_out;
 
+
+
     // microinstruction counter
-    counter uinstr (
-        clk, ui_rst, ui_c, 0, ui_en, 0, 0, ui_out,
-    );
+    // counter uinstr (
+    //     clk, ui_rst, ui_c, 0, 1, 0, 0, ui_out,
+    // );
 
     tape t (
         clk, p_rst, b_rst, out, plus, minus, prev, next, outp, write, load
     );
-
-    always @ (negedge clk & en) begin
-        if (op === 7)
-            outp <= 1;
-            outreg <= out;
-            
+    
+    initial begin
+        ui_out <= 0;
     end
 
+    always @ (negedge clk & en)) begin
+        // i am an awful programmer
+        load = 0;
+        outp = 0;
+        plus = 0;
+        write = 0;
+
+        if (ui_out === 0) begin
+            if (op === 1) begin
+                load = 1;
+            end
+            else if (op === 7) begin
+                outp = 1;
+            end
+        end
+
+        else if (ui_out === 1) begin
+            if (op === 1) begin
+                plus = 1;
+            end
+            else if (op === 7) begin
+                outreg <= out;
+                ui_rst = 1;
+            end
+        end
+
+        else if (ui_out === 2) begin
+            if (op === 1) begin
+                write = 1;
+
+                ui_rst = 1;
+            end
+        end
+
+        ui_out += 1;
+
+        if (ui_rst)
+            ui_out = 0;
+            ui_rst = 0;
+    end
 endmodule
